@@ -1,0 +1,47 @@
+name: Build Web
+
+# 触发：推送到 main / 打 tag / 手动触发
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+jobs:
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Analyze (non-blocking)
+        run: flutter analyze --no-fatal-infos || true
+
+      - name: Build Web release
+        run: flutter build web --release --base-href=/
+
+      - name: Package build output
+        run: |
+          cd build/web
+          zip -r ../../cf_manager_web.zip . > /dev/null
+          cd ../..
+          ls -la cf_manager_web.zip
+
+      - name: Upload web build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: cf_manager_web.zip
+          if-no-files-found: warn
+
+      - name: Build Docker image (验证 Dockerfile)
+        run: docker build -t cf-manager-web:test .
