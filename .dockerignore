@@ -1,0 +1,23 @@
+# --- Flutter / Dart ---
+.dart_tool/
+.build/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+pubspec_overrides.yaml
+
+# --- 编辑器 / 系统 ---
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# --- 其它平台 / 临时（Web 构建不需要） ---
+android/
+ios/
+windows/
+macos/
+linux/
+*.log
