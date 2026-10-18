@@ -17,22 +17,22 @@ class KvDetailPage extends ConsumerWidget {
       appBar: AppBar(
         title: Text(ns.title),
         actions: [
+          IosPageAction(
+            label: '新建键',
+            icon: Icons.add,
+            onPressed: () => _edit(context, ref, null),
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: '刷新',
             onPressed: () => ref.invalidate(kvKeysProvider(key)),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Ios.orange,
-        foregroundColor: Colors.white,
-        onPressed: () => _edit(context, ref, null),
-        child: const Icon(Icons.add),
-      ),
       body: AsyncView<List<KvKey>>(
         value: ref.watch(kvKeysProvider(key)),
         builder: (keys) => ListView(
-          padding: const EdgeInsets.only(bottom: 90),
+          padding: const EdgeInsets.only(bottom: 40),
           children: [
             IosSectionHeader('键（${keys.length}）'),
             IosCard(
@@ -82,32 +82,30 @@ class KvDetailPage extends ConsumerWidget {
       } catch (_) {}
     }
     if (!context.mounted) return;
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(keyName == null ? '新增键值' : '编辑键值'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              enabled: keyName == null,
-              decoration: const InputDecoration(labelText: '键名'),
-            ),
-            TextField(
-              controller: valCtrl,
-              maxLines: 5,
-              decoration: const InputDecoration(labelText: '值'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('取消')),
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('保存')),
+    final ok = await showCfDialog<bool>(
+      context,
+      title: keyName == null ? '新增键值' : '编辑键值',
+      subtitle: '命名空间：${ns.title}',
+      confirmLabel: '保存',
+      confirmValue: true,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            controller: nameCtrl,
+            enabled: keyName == null,
+            decoration: const InputDecoration(
+                labelText: '键名', hintText: '例如 user:1001'),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: valCtrl,
+            maxLines: 6,
+            style: Ios.mono.copyWith(fontSize: 13),
+            decoration: const InputDecoration(
+                labelText: '值', hintText: '键对应的值内容'),
+          ),
         ],
       ),
     );
