@@ -16,7 +16,8 @@ FROM ghcr.io/cirruslabs/flutter:stable AS build-web
 WORKDIR /app
 
 # 1) 先拷贝 pubspec 以利用 Docker 层缓存，减少重复 pub get
-COPY pubspec.yaml pubspec.lock ./
+# 注意：不拷贝 pubspec.lock —— 依赖变更时旧 lock 会导致 pub get 失败
+COPY pubspec.yaml ./
 RUN flutter pub get
 
 # 2) 拷贝源码并启用 Web
