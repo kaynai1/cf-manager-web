@@ -18,6 +18,12 @@ WORKDIR /app
 # 1) 先拷贝 pubspec 以利用 Docker 层缓存，减少重复 pub get
 # 注意：不拷贝 pubspec.lock —— 依赖变更时旧 lock 会导致 pub get 失败
 COPY pubspec.yaml ./
+
+# 以 root 运行 Flutter 时需先声明 git 安全目录，否则 pub get 会失败
+RUN git config --global --add safe.directory /opt/flutter 2>/dev/null || true \
+    && git config --global --add safe.directory "*" 2>/dev/null || true \
+    && flutter config --no-analytics 2>/dev/null || true
+
 RUN flutter pub get
 
 # 2) 拷贝源码并启用 Web
