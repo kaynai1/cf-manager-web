@@ -463,25 +463,30 @@ class CfApi {
         .toList();
   }
 
-  Future<void> createApiToken(String name, String permissionGroupId) =>
-      _request('POST', '/user/tokens', body: {
-        'name': name,
-        'policies': [
-          {
-            'effect': 'allow',
-            'resources': {'com.cloudflare.api.account.*': '*'},
-            'permission_groups': [
-              {'id': permissionGroupId}
-            ],
-          }
-        ],
-      });
+  Future<Map<String, dynamic>> createApiToken(
+      String name, List<String> permissionGroupIds) async {
+    final r = await _request('POST', '/user/tokens', body: {
+      'name': name,
+      'policies': [
+        {
+          'effect': 'allow',
+          'resources': {'com.cloudflare.api.account.*': '*'},
+          'permission_groups': [
+            for (final id in permissionGroupIds) {'id': id},
+          ],
+        }
+      ],
+    });
+    return (r as Map).cast<String, dynamic>();
+  }
 
   Future<void> deleteApiToken(String tokenId) =>
       _request('DELETE', '/user/tokens/$tokenId');
 
-  Future<void> rollApiToken(String tokenId) =>
-      _request('PUT', '/user/tokens/$tokenId/value');
+  Future<String> rollApiToken(String tokenId) async {
+    final r = await _request('PUT', '/user/tokens/$tokenId/value');
+    return ((r as Map)['value'] ?? '') as String;
+  }
 
   // ---- Turnstile ----
   Future<List<TurnstileWidget>> listTurnstile(String accountId) async {
@@ -536,4 +541,24 @@ class CfApi {
 
   Future<Map<String, dynamic>> getUser() async =>
       ((await _request('GET', '/user')) as Map).cast<String, dynamic>();
+
+  // ---- Cloudflare Tunnel ----
+  Future<List<CftTunnel>> listTunnels(String accountId) async {
+    final r = await _request('GET', '/accounts/$accountId/cfd_tunnel') as List;
+    return r.map((e) => CftTunnel.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<void> createTunnel(String accountId, String name) async {
+    await _request('POST', '/accounts/$accountId/cfd_tunnel',
+        body: {'name': name, 'tunnel_secret': null});
+  }
+
+  Future<void> deleteTunnel(String accountId, String tunnelId) async {
+    await _request('DELETE', '/accounts/$accountId/cfd_tunnel/$tunnelId');
+  }
+
+  Future<void> renameTunnel(String accountId, String tunnelId, String name) async {
+    await _request('PUT', '/accounts/$accountId/cfd_tunnel/$tunnelId',
+        body: {'name': name});
+  }
 }
