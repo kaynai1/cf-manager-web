@@ -4,6 +4,7 @@ import 'api.dart';
 import 'defaults.dart';
 import 'models.dart';
 import 'store.dart';
+import 'store_io.dart';
 
 class AccountsState {
   final List<Account> accounts;
@@ -30,14 +31,36 @@ class AccountsNotifier extends StateNotifier<AccountsState> {
   }
 
   Future<void> _init() async {
-    var list = await AccountStore.load();
-    var sel = await AccountStore.selected();
-    if (list.isEmpty) {
-      list = List<Account>.from(kDefaultAccounts);
-      await AccountStore.save(list);
-      sel = list.first.id;
-      await AccountStore.setSelected(sel);
+    List<Account> list;
+    String? sel;
+    try {
+      DiagLog.instance.log('init: loading accounts');
+      list =
+          await AccountStore.load().timeout(const Duration(seconds: 3), onTimeout: () async {
+        DiagLog.instance.log('init: AccountStore.load TIMED OUT');
+        return [];
+      });
+    } catch (_) {
+      list = [];
     }
+    try {
+      sel =
+          await AccountStore.selected().timeout(const Duration(seconds: 2), onTimeout: () => null);
+    } catch (_) {
+      sel = null;
+    }
+    DiagLog.instance.log('init: load done, list=${list.length}');
+    if (list.isEmpty) {
+      try {
+        list = List<Account>.from(kDefaultAccounts);
+        await AccountStore.save(list).timeout(const Duration(seconds: 3));
+        sel = list.first.id;
+        await AccountStore.setSelected(sel);
+      } catch (_) {
+        // 首次写入失败不阻塞进入页面
+      }
+    }
+    DiagLog.instance.log('init: setting state loading=false');
     if (!mounted) return;
     state = AccountsState(accounts: list, selectedId: sel, loading: false);
   }
@@ -289,6 +312,13 @@ final accountInfoProvider =
   final api = ref.watch(apiProvider);
   if (api == null) return {};
   return api.getAccount(accountId);
+});
+
+final tunnelsProvider =
+    FutureProvider.family<List<CftTunnel>, String>((ref, accountId) async {
+  final api = ref.watch(apiProvider);
+  if (api == null) return [];
+  return api.listTunnels(accountId);
 });
 
 final userProvider = FutureProvider<Map<String, dynamic>>((ref) async {
