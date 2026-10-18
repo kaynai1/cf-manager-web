@@ -15,55 +15,52 @@ class D1Page extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('D1 数据库'),
         actions: [
+          IosPageAction(
+            label: '新建数据库',
+            icon: Icons.add,
+            onPressed: () async {
+              final name = TextEditingController();
+              final ok = await showCfDialog<bool>(
+                context,
+                title: '新建数据库',
+                subtitle: '为当前账户创建一个 D1 SQL 数据库',
+                confirmLabel: '创建',
+                confirmValue: true,
+                child: TextField(
+                  controller: name,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    labelText: '数据库名称',
+                    hintText: '例如 my-db',
+                  ),
+                ),
+              );
+              if (ok == true && name.text.trim().isNotEmpty) {
+                final api = ref.read(apiProvider);
+                if (api == null) return;
+                try {
+                  await api.createD1(accountId, name.text.trim());
+                  ref.invalidate(d1Provider(accountId));
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(SnackBar(content: Text('$e')));
+                  }
+                }
+              }
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: '刷新',
             onPressed: () => ref.invalidate(d1Provider(accountId)),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Ios.orange,
-        foregroundColor: Colors.white,
-        onPressed: () async {
-          final name = TextEditingController();
-          final ok = await showDialog<bool>(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('新建数据库'),
-              content: TextField(
-                controller: name,
-                decoration: const InputDecoration(labelText: '名称'),
-              ),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('取消')),
-                TextButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text('创建')),
-              ],
-            ),
-          );
-          if (ok == true && name.text.trim().isNotEmpty) {
-            final api = ref.read(apiProvider);
-            if (api == null) return;
-            try {
-              await api.createD1(accountId, name.text.trim());
-              ref.invalidate(d1Provider(accountId));
-            } catch (e) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(SnackBar(content: Text('$e')));
-              }
-            }
-          }
-        },
-        child: const Icon(Icons.add),
-      ),
       body: AsyncView<List<D1Database>>(
         value: ref.watch(d1Provider(accountId)),
         builder: (list) => ListView(
-          padding: const EdgeInsets.only(bottom: 90),
+          padding: const EdgeInsets.only(bottom: 40),
           children: [
             IosSectionHeader('数据库（${list.length}）'),
             IosCard(
